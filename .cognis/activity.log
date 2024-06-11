@@ -36,3 +36,4 @@
 2025-10-22T16:26:46  docs: expand examples
 2026-02-02T11:43:53  test: strengthen coverage
 2026-06-02T18:00:00  chore: tune defaults
+2024-06-11T14:26:46  docs(config): fix off-by-one in line numbers
