@@ -37,3 +37,4 @@
 2026-02-02T11:43:53  test: strengthen coverage
 2026-06-02T18:00:00  chore: tune defaults
 2024-06-11T14:26:46  docs(config): fix off-by-one in line numbers
+2024-06-26T09:43:53  ci(fixtures): guard against ReDoS in patterns
