@@ -45,3 +45,4 @@
 2024-09-30T08:08:28  feat(output): add a fast path for the common case
 2024-10-15T15:25:35  fix(ci): dedupe overlapping findings
 2024-10-31T10:42:42  test(core): simplify the walker
+2024-11-16T17:59:49  docs: expand examples
