@@ -48,3 +48,4 @@
 2024-11-16T17:59:49  docs: expand examples
 2024-12-02T12:16:56  ci(report): support stdin as a source
 2025-01-04T19:33:03  chore(format): add type hints to the public API
+2025-01-19T14:50:10  docs(fixtures): add a --format json alias
