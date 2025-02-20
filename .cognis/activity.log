@@ -50,3 +50,4 @@
 2025-01-04T19:33:03  chore(format): add type hints to the public API
 2025-01-19T14:50:10  docs(fixtures): add a --format json alias
 2025-02-05T09:07:17  ci(tests): clarify the README quickstart
+2025-02-20T16:24:24  build(docs): fix off-by-one in line numbers
