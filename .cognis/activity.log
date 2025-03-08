@@ -51,3 +51,4 @@
 2025-01-19T14:50:10  docs(fixtures): add a --format json alias
 2025-02-05T09:07:17  ci(tests): clarify the README quickstart
 2025-02-20T16:24:24  build(docs): fix off-by-one in line numbers
+2025-03-08T11:41:31  feat(scan): pin the test dependencies
