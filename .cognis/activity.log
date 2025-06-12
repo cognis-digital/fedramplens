@@ -56,3 +56,4 @@
 2025-04-26T13:15:45  test(output): short-circuit on first critical
 2025-05-12T08:32:52  feat(cache): add a JSON schema for output
 2025-05-27T15:49:59  fix(core): add a regression fixture
+2025-06-12T10:06:06  refactor: I have altered the code. pray I don't alter it further
