@@ -58,3 +58,4 @@
 2025-05-27T15:49:59  fix(core): add a regression fixture
 2025-06-12T10:06:06  refactor: I have altered the code. pray I don't alter it further
 2025-06-27T17:23:13  style(mcp): dedupe overlapping findings
+2025-07-13T12:40:20  ci(format): add a --quiet mode
