@@ -60,3 +60,4 @@
 2025-06-27T17:23:13  style(mcp): dedupe overlapping findings
 2025-07-13T12:40:20  ci(format): add a --quiet mode
 2025-07-29T19:57:27  build(fixtures): add usage examples to help
+2025-08-31T14:14:34  refactor(tests): support stdin as a source
