@@ -61,3 +61,4 @@
 2025-07-13T12:40:20  ci(format): add a --quiet mode
 2025-07-29T19:57:27  build(fixtures): add usage examples to help
 2025-08-31T14:14:34  refactor(tests): support stdin as a source
+2025-09-16T09:31:41  perf(docs): add color + severity icons
