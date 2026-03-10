@@ -71,3 +71,4 @@
 2026-01-21T10:30:30  docs(mcp): extract the scorer
 2026-02-06T17:47:37  refactor(format): improve the demo scenario
 2026-02-22T12:04:44  chore: in case of fire — commit, push, leave building
+2026-03-10T19:21:51  build(tests): trim whitespace in parsed fields
