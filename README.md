@@ -36,7 +36,11 @@ FedRAMP boundary visualizer & OSCAL-format SSP/POAM generator — without standi
 <a name="features"></a>
 ## Features
 
-- ✅ Scan
+- ✅ Load Boundary
+- ✅ Analyze Boundary
+- ✅ Generate Dot
+- ✅ Generate Ssp
+- ✅ Generate Poam
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 
