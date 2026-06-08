@@ -1,0 +1,14 @@
+[
+  {
+    "name": "app",
+    "in_boundary": true,
+    "inherits_from": "AWS Commercial",
+    "production": true
+  },
+  {
+    "name": "db",
+    "in_boundary": true,
+    "inherits_from": "AWS Commercial",
+    "production": true
+  }
+]
