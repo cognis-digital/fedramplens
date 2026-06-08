@@ -1,0 +1,59 @@
+{
+  "system_name": "Acme Compliance Cloud",
+  "system_id": "FR2026ACME01",
+  "impact": "moderate",
+  "components": [
+    {
+      "id": "web",
+      "name": "Web / Load Balancer Tier",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-7", "SC-8", "AU-2"]
+    },
+    {
+      "id": "app",
+      "name": "Application Tier",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AC-6", "SI-4", "AU-2"]
+    },
+    {
+      "id": "db",
+      "name": "Managed Postgres",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-13", "SC-28", "AU-9"]
+    },
+    {
+      "id": "okta",
+      "name": "Okta Identity Provider",
+      "type": "service",
+      "zone": "external",
+      "controls": ["IA-2", "IA-5"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "web", "data": "HTTPS 443", "encrypted": true},
+    {"from": "web", "to": "app", "data": "gRPC mTLS", "encrypted": true},
+    {"from": "app", "to": "db", "data": "PostgreSQL TLS", "encrypted": true},
+    {"from": "app", "to": "okta", "data": "SAML SSO", "encrypted": false}
+  ],
+  "poam": [
+    {
+      "id": "V-001",
+      "weakness": "Legacy TLS 1.1 cipher still enabled on admin endpoint",
+      "control": "SC-13",
+      "severity": "high",
+      "status": "open",
+      "scheduled": "2026-03-31"
+    },
+    {
+      "id": "V-002",
+      "weakness": "Audit log retention not yet at 90 days",
+      "control": "AU-11",
+      "severity": "moderate",
+      "status": "open",
+      "scheduled": "2026-12-31"
+    }
+  ]
+}
