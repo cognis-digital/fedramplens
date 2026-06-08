@@ -1,0 +1,10 @@
+{
+  "name": "@cognis/fedramplens",
+  "version": "0.2.0",
+  "description": "JavaScript port of fedramplens (Cognis Neural Suite)",
+  "bin": {
+    "fedramplens": "index.js"
+  },
+  "license": "LicenseRef-COCL-1.0",
+  "type": "module"
+}
