@@ -20,6 +20,36 @@ pip install cognis-fedramplens
 fedramplens scan .            # → prioritized findings in seconds
 ```
 
+## Usage — step by step
+
+1. **Install** the tool:
+
+   ```bash
+   pip install cognis-fedramplens
+   ```
+
+2. **Analyze a boundary** JSON for integrity and control coverage:
+
+   ```bash
+   fedramplens analyze boundary.json
+   ```
+
+3. **Generate artifacts** from the same boundary file — a Graphviz diagram, an OSCAL-style SSP, or a POA&M:
+
+   ```bash
+   fedramplens diagram boundary.json | dot -Tpng -o boundary.png
+   fedramplens ssp boundary.json  > ssp.json
+   fedramplens poam boundary.json > poam.json
+   ```
+
+4. **Read the result.** `analyze` reports impact level, controls implemented vs. baseline (coverage %), boundary components/flows, and open/overdue POA&M items. Add `--format json` for the full summary. Exit `0` when authorization-ready (no high/critical findings), `1` otherwise.
+
+5. **Gate in CI.** Fail the pipeline until the boundary is authorization-ready:
+
+   ```bash
+   fedramplens analyze boundary.json --format json | jq '.authorization_ready'
+   ```
+
 ## Contents
 
 - [Why fedramplens?](#why) · [Features](#features) · [Quick start](#quick-start) · [Example](#example) · [Architecture](#architecture) · [AI stack](#ai-stack) · [How it compares](#how-it-compares) · [Integrations](#integrations) · [Install anywhere](#install-anywhere) · [Related](#related) · [Contributing](#contributing)
