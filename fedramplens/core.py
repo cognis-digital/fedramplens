@@ -63,8 +63,15 @@ class Boundary:
 
 def load_boundary(path: str) -> Boundary:
     """Load and validate a boundary definition from a JSON file."""
-    with open(path, "r", encoding="utf-8") as fh:
-        raw = json.load(fh)
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            raw = json.load(fh)
+    except PermissionError as exc:
+        raise BoundaryError(f"permission denied reading {path!r}") from exc
+    except OSError as exc:
+        raise BoundaryError(f"cannot open {path!r}: {exc}") from exc
+    except UnicodeDecodeError as exc:
+        raise BoundaryError(f"file is not valid UTF-8: {exc}") from exc
     return _build_boundary(raw)
 
 
@@ -72,9 +79,10 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
     if not isinstance(raw, dict):
         raise BoundaryError("boundary definition must be a JSON object")
     for key in ("system_name", "system_id", "impact"):
-        if not raw.get(key):
+        val = raw.get(key)
+        if not val or not str(val).strip():
             raise BoundaryError(f"missing required field: {key}")
-    impact = str(raw["impact"]).lower()
+    impact = str(raw["impact"]).strip().lower()
     if impact not in VALID_IMPACTS:
         raise BoundaryError(
             f"impact must be one of {VALID_IMPACTS}, got {impact!r}"
@@ -84,31 +92,38 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
     if not isinstance(components, list) or not components:
         raise BoundaryError("at least one component is required")
     seen = set()
-    for c in components:
+    for idx, c in enumerate(components):
+        if not isinstance(c, dict):
+            raise BoundaryError(f"component at index {idx} must be an object")
         cid = c.get("id")
-        if not cid:
-            raise BoundaryError("component missing 'id'")
+        if not cid or not str(cid).strip():
+            raise BoundaryError(f"component at index {idx} missing 'id'")
+        cid = str(cid).strip()
         if cid in seen:
-            raise BoundaryError(f"duplicate component id: {cid}")
+            raise BoundaryError(f"duplicate component id: {cid!r}")
         seen.add(cid)
         zone = c.get("zone", "internal")
         if zone not in VALID_ZONES:
             raise BoundaryError(
-                f"component {cid}: zone must be one of {VALID_ZONES}"
+                f"component {cid!r}: zone must be one of {VALID_ZONES}"
             )
 
     flows = raw.get("flows", [])
     if not isinstance(flows, list):
         raise BoundaryError("'flows' must be a list")
-    for f in flows:
+    for idx, f in enumerate(flows):
+        if not isinstance(f, dict):
+            raise BoundaryError(f"flow at index {idx} must be an object")
         if not f.get("from") or not f.get("to"):
-            raise BoundaryError("each flow needs 'from' and 'to'")
+            raise BoundaryError(f"flow at index {idx} needs 'from' and 'to'")
 
     poam = raw.get("poam", [])
     if not isinstance(poam, list):
         raise BoundaryError("'poam' must be a list")
-    for p in poam:
-        sev = str(p.get("severity", "moderate")).lower()
+    for idx, p in enumerate(poam):
+        if not isinstance(p, dict):
+            raise BoundaryError(f"poam entry at index {idx} must be an object")
+        sev = str(p.get("severity", "moderate")).strip().lower()
         if sev not in VALID_SEVERITIES:
             raise BoundaryError(
                 f"POA&M {p.get('id')}: severity must be one of {VALID_SEVERITIES}"
@@ -170,9 +185,10 @@ def analyze_boundary(b: Boundary) -> Dict[str, Any]:
     implemented = set()
     for c in b.components:
         for ctl in c.get("controls", []):
-            implemented.add(_normalize_control(ctl))
-    baseline = BASELINE_CONTROL_COUNTS[b.impact]
-    coverage_pct = round(100.0 * len(implemented) / baseline, 1)
+            if ctl:
+                implemented.add(_normalize_control(ctl))
+    baseline = BASELINE_CONTROL_COUNTS.get(b.impact, 0)
+    coverage_pct = round(100.0 * len(implemented) / baseline, 1) if baseline else 0.0
 
     # 5. POA&M risk roll-up + overdue detection.
     today = datetime.date.today()

@@ -84,11 +84,23 @@ def main(argv: Optional[List[str]] = None) -> int:
     except FileNotFoundError:
         print(f"error: file not found: {args.boundary}", file=sys.stderr)
         return 2
+    except IsADirectoryError:
+        print(
+            f"error: path is a directory, not a file: {args.boundary}",
+            file=sys.stderr,
+        )
+        return 2
     except json.JSONDecodeError as exc:
-        print(f"error: invalid JSON: {exc}", file=sys.stderr)
+        print(f"error: invalid JSON in {args.boundary!r}: {exc}", file=sys.stderr)
+        return 2
+    except UnicodeDecodeError as exc:
+        print(f"error: file is not valid UTF-8: {exc}", file=sys.stderr)
         return 2
     except BoundaryError as exc:
         print(f"error: invalid boundary: {exc}", file=sys.stderr)
+        return 2
+    except OSError as exc:
+        print(f"error: cannot read {args.boundary!r}: {exc}", file=sys.stderr)
         return 2
 
     if args.command == "analyze":
