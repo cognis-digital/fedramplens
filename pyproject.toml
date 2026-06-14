@@ -36,3 +36,6 @@ fedramplens = "fedramplens.cli:main"
 
 [tool.hatch.build.targets.wheel]
 packages = ["fedramplens"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
