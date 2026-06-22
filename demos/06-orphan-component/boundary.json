@@ -1,0 +1,33 @@
+{
+  "system_name": "Telemetry Collector",
+  "system_id": "FR2026TLC06",
+  "impact": "low",
+  "components": [
+    {
+      "id": "ingest",
+      "name": "Telemetry Ingest Endpoint",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["SC-7", "SC-8", "AU-2"]
+    },
+    {
+      "id": "tsdb",
+      "name": "Time-Series Database",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-28", "AU-9"]
+    },
+    {
+      "id": "reporter",
+      "name": "Scheduled Report Generator",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AU-2"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "ingest", "data": "HTTPS 443", "encrypted": true},
+    {"from": "ingest", "to": "tsdb", "data": "metric write (TLS)", "encrypted": true}
+  ],
+  "poam": []
+}

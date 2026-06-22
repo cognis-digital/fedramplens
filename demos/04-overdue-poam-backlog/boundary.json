@@ -1,0 +1,83 @@
+{
+  "system_name": "Mission Data Exchange",
+  "system_id": "FR2026MDX04",
+  "impact": "high",
+  "components": [
+    {
+      "id": "waf",
+      "name": "WAF / TLS Termination",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-7", "SC-8", "SC-13", "AU-2", "AU-12", "SI-4"]
+    },
+    {
+      "id": "api",
+      "name": "Exchange API",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AC-6", "IA-2", "IA-5", "AU-2", "CM-6", "SI-7"]
+    },
+    {
+      "id": "vault",
+      "name": "Secrets Vault (FIPS 140-2)",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["SC-12", "SC-13", "SC-28", "IA-5"]
+    },
+    {
+      "id": "store",
+      "name": "Encrypted Object Store",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-28", "AU-9", "CP-9", "MP-6"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "waf", "data": "HTTPS 443", "encrypted": true},
+    {"from": "waf", "to": "api", "data": "mTLS", "encrypted": true},
+    {"from": "api", "to": "vault", "data": "secrets retrieval (TLS)", "encrypted": true},
+    {"from": "api", "to": "store", "data": "object read/write (TLS)", "encrypted": true}
+  ],
+  "poam": [
+    {
+      "id": "V-101",
+      "weakness": "MFA not enforced for break-glass admin accounts",
+      "control": "IA-2",
+      "severity": "critical",
+      "status": "open",
+      "scheduled": "2026-02-15"
+    },
+    {
+      "id": "V-102",
+      "weakness": "Quarterly vulnerability scan cadence slipped to semi-annual",
+      "control": "RA-5",
+      "severity": "high",
+      "status": "open",
+      "scheduled": "2026-04-30"
+    },
+    {
+      "id": "V-103",
+      "weakness": "Container base images two minor versions behind hardened baseline",
+      "control": "SI-2",
+      "severity": "moderate",
+      "status": "open",
+      "scheduled": "2026-05-31"
+    },
+    {
+      "id": "V-104",
+      "weakness": "Incident response tabletop exercise not yet conducted this cycle",
+      "control": "IR-3",
+      "severity": "moderate",
+      "status": "open",
+      "scheduled": "2026-12-15"
+    },
+    {
+      "id": "V-099",
+      "weakness": "Legacy SHA-1 signing key retired",
+      "control": "SC-13",
+      "severity": "high",
+      "status": "completed",
+      "scheduled": "2026-01-20"
+    }
+  ]
+}

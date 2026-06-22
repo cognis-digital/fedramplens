@@ -1,0 +1,42 @@
+{
+  "system_name": "Grants Intake Service",
+  "system_id": "FR2026GIS05",
+  "impact": "moderate",
+  "components": [
+    {
+      "id": "cdn",
+      "name": "CloudFront (GovCloud)",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["SC-7", "SC-8", "AU-2"]
+    },
+    {
+      "id": "intake",
+      "name": "Intake API",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "IA-2", "SI-4", "AU-2"]
+    },
+    {
+      "id": "queue",
+      "name": "SQS Processing Queue",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["SC-8", "AU-2"]
+    },
+    {
+      "id": "dynamo",
+      "name": "DynamoDB Submissions Table",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-28", "AU-9"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "cdn", "data": "HTTPS 443", "encrypted": true},
+    {"from": "cdn", "to": "intake", "data": "mTLS", "encrypted": true},
+    {"from": "intake", "to": "queue", "data": "enqueue (TLS)", "encrypted": true},
+    {"from": "worker", "to": "dynamo", "data": "write submission (TLS)", "encrypted": true}
+  ],
+  "poam": []
+}

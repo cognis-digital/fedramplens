@@ -14,6 +14,7 @@ from .core import (
     generate_dot,
     generate_ssp,
     generate_poam,
+    to_sarif,
 )
 
 
@@ -45,11 +46,6 @@ def _print_analysis_table(summary: dict) -> None:
     print(f"Authorization-ready (no high/critical findings): {ready}")
 
 
-def _emit(obj, fmt: str) -> None:
-    if fmt == "json":
-        print(json.dumps(obj, indent=2))
-
-
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(
         prog=TOOL_NAME,
@@ -60,8 +56,9 @@ def main(argv: Optional[List[str]] = None) -> int:
         version=f"{TOOL_NAME} {TOOL_VERSION}",
     )
     parser.add_argument(
-        "--format", choices=("table", "json"), default="table",
-        help="output format (default: table; ignored for dot/ssp/poam)",
+        "--format", choices=("table", "json", "sarif"), default="table",
+        help="output format for analyze: table | json | sarif 2.1.0 "
+             "(default: table; ignored for dot/ssp/poam)",
     )
     sub = parser.add_subparsers(dest="command", required=True)
 
@@ -94,7 +91,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.command == "analyze":
         summary = analyze_boundary(b)
         if args.format == "json":
-            _emit(summary, "json")
+            print(json.dumps(summary, indent=2))
+        elif args.format == "sarif":
+            print(json.dumps(to_sarif(summary), indent=2))
         else:
             _print_analysis_table(summary)
         # Non-zero exit if not authorization-ready.

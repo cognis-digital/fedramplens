@@ -1,0 +1,51 @@
+{
+  "system_name": "Permit Portal",
+  "system_id": "FR2026PMT08",
+  "impact": "moderate",
+  "components": [
+    {
+      "id": "lb",
+      "name": "Load Balancer",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["SC-7", "SC-8", "AU-2"]
+    },
+    {
+      "id": "app",
+      "name": "Permit Application",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "IA-2", "SI-4", "AU-2"]
+    },
+    {
+      "id": "db",
+      "name": "Permits Database",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-13", "SC-28", "AU-9"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "lb", "data": "HTTPS 443", "encrypted": true},
+    {"from": "lb", "to": "app", "data": "mTLS", "encrypted": true},
+    {"from": "app", "to": "db", "data": "PostgreSQL TLS", "encrypted": true}
+  ],
+  "poam": [
+    {
+      "id": "V-301",
+      "weakness": "Session timeout longer than policy maximum",
+      "control": "AC-12",
+      "severity": "moderate",
+      "status": "open",
+      "scheduled": "Q3 2026"
+    },
+    {
+      "id": "V-302",
+      "weakness": "Backup restoration test not documented",
+      "control": "CP-9",
+      "severity": "low",
+      "status": "open",
+      "scheduled": "2026-10-01"
+    }
+  ]
+}

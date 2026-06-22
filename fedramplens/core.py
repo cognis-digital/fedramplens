@@ -25,9 +25,36 @@ any flow that crosses the boundary unencrypted is flagged.
 from __future__ import annotations
 
 import json
+import os
 import datetime
 from dataclasses import dataclass, field
 from typing import Any, Dict, List
+
+TOOL_NAME = "fedramplens"
+
+
+def _read_version() -> str:
+    """Resolve the tool version: repo VERSION file, then installed metadata."""
+    here = os.path.dirname(os.path.abspath(__file__))
+    for cand in (
+        os.path.join(here, "..", "VERSION"),
+        os.path.join(here, "VERSION"),
+    ):
+        try:
+            with open(cand, "r", encoding="utf-8") as fh:
+                v = fh.read().strip()
+            if v:
+                return v
+        except OSError:
+            continue
+    try:  # installed wheel: VERSION file isn't packaged, use dist metadata
+        from importlib.metadata import version as _dist_version
+        return _dist_version("cognis-fedramplens")
+    except Exception:
+        return "0.0.0"
+
+
+TOOL_VERSION = _read_version()
 
 # FedRAMP baseline control counts (Rev 5) used for coverage estimates.
 BASELINE_CONTROL_COUNTS = {"low": 156, "moderate": 323, "high": 410}
@@ -225,6 +252,95 @@ def analyze_boundary(b: Boundary) -> Dict[str, Any]:
         ),
     }
     return summary
+
+
+def to_sarif(summary: Dict[str, Any]) -> Dict[str, Any]:
+    """Render an analyze() summary as a SARIF 2.1.0 log.
+
+    Boundary findings become SARIF results so authorization gaps surface in
+    GitHub code-scanning, Azure DevOps, and any SARIF-aware viewer. Severity
+    maps to the SARIF ``level`` taxonomy (error/warning/note) and the original
+    FedRAMP severity + NIST control id are preserved as properties.
+    """
+    level_map = {
+        "critical": "error",
+        "high": "error",
+        "moderate": "warning",
+        "low": "note",
+    }
+    # Stable rule catalogue derived from the finding types we can emit.
+    rule_help = {
+        "unencrypted_boundary_crossing":
+            "Encrypt data flows that cross the authorization boundary (SC-8).",
+        "overdue_poam":
+            "Remediate or reschedule POA&M milestones past their due date.",
+        "dangling_flow":
+            "Define every component referenced by a data flow.",
+        "orphan_component":
+            "Connect in-boundary components with at least one data flow.",
+        "bad_poam_date":
+            "Use ISO-8601 (YYYY-MM-DD) for POA&M scheduled-completion dates.",
+    }
+    rules: List[Dict[str, Any]] = []
+    rule_index: Dict[str, int] = {}
+    results: List[Dict[str, Any]] = []
+    for f in summary.get("findings", []):
+        ftype = f["type"]
+        if ftype not in rule_index:
+            rule_index[ftype] = len(rules)
+            rules.append({
+                "id": ftype,
+                "name": "".join(p.capitalize() for p in ftype.split("_")),
+                "shortDescription": {"text": ftype.replace("_", " ")},
+                "fullDescription": {
+                    "text": rule_help.get(ftype, ftype.replace("_", " "))
+                },
+                "helpUri":
+                    "https://github.com/cognis-digital/fedramplens#findings",
+                "defaultConfiguration": {
+                    "level": level_map.get(f["severity"], "warning")
+                },
+            })
+        props = {"fedramp-severity": f["severity"], "finding-type": ftype}
+        if f.get("control"):
+            props["nist-control"] = f["control"]
+        results.append({
+            "ruleId": ftype,
+            "ruleIndex": rule_index[ftype],
+            "level": level_map.get(f["severity"], "warning"),
+            "message": {"text": f["detail"]},
+            "properties": props,
+            "locations": [{
+                "logicalLocations": [{
+                    "name": summary.get("system_id", "system"),
+                    "fullyQualifiedName": summary.get("system_name", "system"),
+                    "kind": "module",
+                }]
+            }],
+        })
+    return {
+        "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
+        "version": "2.1.0",
+        "runs": [{
+            "tool": {
+                "driver": {
+                    "name": TOOL_NAME,
+                    "informationUri":
+                        "https://github.com/cognis-digital/fedramplens",
+                    "version": TOOL_VERSION,
+                    "rules": rules,
+                }
+            },
+            "properties": {
+                "system-id": summary.get("system_id"),
+                "impact": summary.get("impact"),
+                "coverage-pct": summary.get("coverage_pct"),
+                "poam-risk-score": summary.get("poam_risk_score"),
+                "authorization-ready": summary.get("authorization_ready"),
+            },
+            "results": results,
+        }],
+    }
 
 
 def generate_dot(b: Boundary) -> str:

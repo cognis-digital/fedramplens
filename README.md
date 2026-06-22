@@ -42,13 +42,40 @@ fedramplens scan .            # → prioritized findings in seconds
    fedramplens poam boundary.json > poam.json
    ```
 
-4. **Read the result.** `analyze` reports impact level, controls implemented vs. baseline (coverage %), boundary components/flows, and open/overdue POA&M items. Add `--format json` for the full summary. Exit `0` when authorization-ready (no high/critical findings), `1` otherwise.
+4. **Read the result.** `analyze` reports impact level, controls implemented vs. baseline (coverage %), boundary components/flows, and open/overdue POA&M items. Add `--format json` for the full summary, or `--format sarif` for a **SARIF 2.1.0** log that uploads straight to GitHub code-scanning. Exit `0` when authorization-ready (no high/critical findings), `1` otherwise.
+
+   ```bash
+   fedramplens analyze boundary.json --format sarif > fedramplens.sarif
+   ```
 
 5. **Gate in CI.** Fail the pipeline until the boundary is authorization-ready:
 
    ```bash
    fedramplens analyze boundary.json --format json | jq '.authorization_ready'
    ```
+
+## Demos
+
+Runnable, real-world scenarios live in [`demos/`](demos/). Each folder has a
+`boundary.json` in the tool's input format and a `SCENARIO.md` explaining where
+the data comes from, the exact command, the expected output, and how to act:
+
+| Demo | Impact | Illustrates |
+|---|---|---|
+| [`01-basic`](demos/01-basic) | Moderate | Three-tier SaaS with one unencrypted SSO flow + overdue POA&M |
+| [`02-clean-low-saas`](demos/02-clean-low-saas) | Low | Authorization-ready baseline (exit 0, empty SARIF) |
+| [`03-boundary-creep`](demos/03-boundary-creep) | Moderate | Production data leaving the boundary to a commercial warehouse |
+| [`04-overdue-poam-backlog`](demos/04-overdue-poam-backlog) | High | Slipped POA&M milestones + risk roll-up; completed items excluded |
+| [`05-dangling-flow-typo`](demos/05-dangling-flow-typo) | Moderate | Flow references an undeclared component (doc drift) |
+| [`06-orphan-component`](demos/06-orphan-component) | Low | In-boundary component with no data flows |
+| [`07-high-baseline-ready`](demos/07-high-baseline-ready) | High | Clean High-baseline package, SIEM-integrated |
+| [`08-bad-poam-date`](demos/08-bad-poam-date) | Moderate | Non-ISO POA&M date surfaced instead of silently ignored |
+| [`09-multi-external-deps`](demos/09-multi-external-deps) | Moderate | Multiple external interconnections; one unencrypted ACH flow |
+
+```bash
+python -m fedramplens analyze demos/04-overdue-poam-backlog/boundary.json
+python -m fedramplens --format sarif analyze demos/03-boundary-creep/boundary.json
+```
 
 ## Contents
 
@@ -71,6 +98,7 @@ FedRAMP boundary visualizer & OSCAL-format SSP/POAM generator — without standi
 - ✅ Generate Dot
 - ✅ Generate Ssp
 - ✅ Generate Poam
+- ✅ SARIF 2.1.0 export (`analyze --format sarif`) for GitHub code-scanning
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 

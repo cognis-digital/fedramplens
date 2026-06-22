@@ -1,0 +1,34 @@
+{
+  "system_name": "GovForms Lite",
+  "system_id": "FR2026GFL02",
+  "impact": "low",
+  "components": [
+    {
+      "id": "alb",
+      "name": "Application Load Balancer",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-7", "SC-8", "SC-13", "AU-2", "AU-12"]
+    },
+    {
+      "id": "app",
+      "name": "Forms API (ECS Fargate)",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AC-6", "IA-2", "SI-4", "AU-2", "CM-6"]
+    },
+    {
+      "id": "db",
+      "name": "Aurora PostgreSQL (GovCloud)",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-13", "SC-28", "AU-9", "CP-9"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "alb", "data": "HTTPS 443", "encrypted": true},
+    {"from": "alb", "to": "app", "data": "HTTP/2 mTLS", "encrypted": true},
+    {"from": "app", "to": "db", "data": "PostgreSQL TLS", "encrypted": true}
+  ],
+  "poam": []
+}

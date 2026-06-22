@@ -1,0 +1,67 @@
+{
+  "system_name": "Benefits Eligibility Engine",
+  "system_id": "FR2026BEE09",
+  "impact": "moderate",
+  "components": [
+    {
+      "id": "alb",
+      "name": "Application Load Balancer",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-7", "SC-8", "SC-13", "AU-2"]
+    },
+    {
+      "id": "engine",
+      "name": "Eligibility Rules Engine",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AC-4", "AC-6", "IA-2", "SI-4", "AU-2", "CM-6"]
+    },
+    {
+      "id": "db",
+      "name": "Applicant Records DB",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-13", "SC-28", "AU-9", "CP-9"]
+    },
+    {
+      "id": "okta",
+      "name": "Login.gov (IdP)",
+      "type": "service",
+      "zone": "external",
+      "controls": ["IA-2", "IA-5", "IA-8"]
+    },
+    {
+      "id": "ssa",
+      "name": "SSA Verification API",
+      "type": "service",
+      "zone": "external",
+      "controls": []
+    },
+    {
+      "id": "pay",
+      "name": "Treasury Disbursement Gateway",
+      "type": "service",
+      "zone": "external",
+      "controls": []
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "alb", "data": "HTTPS 443", "encrypted": true},
+    {"from": "alb", "to": "engine", "data": "mTLS", "encrypted": true},
+    {"from": "engine", "to": "db", "data": "PostgreSQL TLS", "encrypted": true},
+    {"from": "engine", "to": "okta", "data": "OIDC", "encrypted": true},
+    {"from": "engine", "to": "ssa", "data": "SOAP verification (TLS)", "encrypted": true},
+    {"from": "engine", "to": "pay", "data": "ACH instruction", "encrypted": false}
+  ],
+  "poam": [
+    {
+      "id": "V-401",
+      "weakness": "Interconnection Security Agreement with SSA pending renewal",
+      "control": "CA-3",
+      "severity": "moderate",
+      "status": "open",
+      "scheduled": "2026-09-15"
+    }
+  ]
+}

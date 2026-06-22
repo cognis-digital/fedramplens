@@ -1,0 +1,60 @@
+{
+  "system_name": "Federal Case Management System",
+  "system_id": "FR2026FCM07",
+  "impact": "high",
+  "components": [
+    {
+      "id": "edge",
+      "name": "Edge / WAF + TLS Termination",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-5", "SC-7", "SC-8", "SC-13", "AU-2", "AU-12", "SI-4"]
+    },
+    {
+      "id": "web",
+      "name": "Case Web Application",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "AC-6", "AC-11", "IA-2", "IA-5", "SI-10", "AU-2", "CM-6"]
+    },
+    {
+      "id": "svc",
+      "name": "Case Services API",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-4", "AC-6", "SC-8", "SI-7", "AU-2", "CM-7"]
+    },
+    {
+      "id": "db",
+      "name": "Case Records DB (FIPS-validated)",
+      "type": "database",
+      "zone": "internal",
+      "controls": ["SC-12", "SC-13", "SC-28", "AU-9", "CP-9", "MP-6"]
+    },
+    {
+      "id": "audit",
+      "name": "Audit Aggregation / SIEM",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AU-2", "AU-3", "AU-6", "AU-9", "AU-12", "SI-4"]
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "edge", "data": "HTTPS 443", "encrypted": true},
+    {"from": "edge", "to": "web", "data": "mTLS", "encrypted": true},
+    {"from": "web", "to": "svc", "data": "gRPC mTLS", "encrypted": true},
+    {"from": "svc", "to": "db", "data": "TDS/PostgreSQL TLS", "encrypted": true},
+    {"from": "web", "to": "audit", "data": "syslog over TLS", "encrypted": true},
+    {"from": "svc", "to": "audit", "data": "syslog over TLS", "encrypted": true}
+  ],
+  "poam": [
+    {
+      "id": "V-201",
+      "weakness": "Annual penetration test report awaiting 3PAO sign-off",
+      "control": "CA-8",
+      "severity": "low",
+      "status": "open",
+      "scheduled": "2026-11-30"
+    }
+  ]
+}

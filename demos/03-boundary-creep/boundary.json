@@ -1,0 +1,42 @@
+{
+  "system_name": "InsightAnalytics Platform",
+  "system_id": "FR2026IAP03",
+  "impact": "moderate",
+  "components": [
+    {
+      "id": "api-gateway",
+      "name": "API Gateway",
+      "type": "service",
+      "zone": "boundary",
+      "controls": ["AC-2", "SC-7", "SC-8", "AU-2"]
+    },
+    {
+      "id": "portal",
+      "name": "Customer Portal",
+      "type": "service",
+      "zone": "internal",
+      "controls": ["AC-3", "IA-2", "SI-4"]
+    },
+    {
+      "id": "warehouse",
+      "name": "Analytics Warehouse (Snowflake commercial)",
+      "type": "database",
+      "zone": "external",
+      "controls": ["SC-28"]
+    },
+    {
+      "id": "slack",
+      "name": "Slack Notifications Integration",
+      "type": "service",
+      "zone": "external",
+      "controls": []
+    }
+  ],
+  "flows": [
+    {"from": "internet", "to": "api-gateway", "data": "HTTPS 443", "encrypted": true},
+    {"from": "api-gateway", "to": "portal", "data": "mTLS", "encrypted": true},
+    {"from": "portal", "to": "warehouse", "data": "production analytics rows", "encrypted": false},
+    {"from": "portal", "to": "slack", "data": "incident alerts (may contain PII)", "encrypted": true}
+  ],
+  "poam": []
+}
