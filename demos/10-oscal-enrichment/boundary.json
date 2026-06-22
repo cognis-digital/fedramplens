@@ -1,0 +1,19 @@
+{
+  "system_name": "Edge Enclave SaaS",
+  "system_id": "FR2026EDGE01",
+  "impact": "moderate",
+  "components": [
+    {"id": "web", "name": "Web Tier", "type": "service", "zone": "boundary",
+     "controls": ["AC-2", "SC-7", "SC-8"]},
+    {"id": "app", "name": "App Tier", "type": "service", "zone": "internal",
+     "controls": ["AC-3", "SI-4", "AU-2"]},
+    {"id": "db", "name": "Managed Postgres", "type": "database", "zone": "internal",
+     "controls": ["SC-13", "AU-6"]}
+  ],
+  "flows": [
+    {"from": "internet", "to": "web", "data": "HTTP", "encrypted": false},
+    {"from": "web", "to": "app", "data": "gRPC/TLS", "encrypted": true},
+    {"from": "app", "to": "db", "data": "TLS", "encrypted": true}
+  ],
+  "poam": []
+}

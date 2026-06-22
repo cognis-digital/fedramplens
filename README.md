@@ -71,11 +71,65 @@ the data comes from, the exact command, the expected output, and how to act:
 | [`07-high-baseline-ready`](demos/07-high-baseline-ready) | High | Clean High-baseline package, SIEM-integrated |
 | [`08-bad-poam-date`](demos/08-bad-poam-date) | Moderate | Non-ISO POA&M date surfaced instead of silently ignored |
 | [`09-multi-external-deps`](demos/09-multi-external-deps) | Moderate | Multiple external interconnections; one unencrypted ACH flow |
+| [`10-oscal-enrichment`](demos/10-oscal-enrichment) | Moderate | Resolve NIST 800-53 rev5 control titles from the OSCAL data feed, offline |
 
 ```bash
 python -m fedramplens analyze demos/04-overdue-poam-backlog/boundary.json
 python -m fedramplens --format sarif analyze demos/03-boundary-creep/boundary.json
+python -m fedramplens analyze demos/10-oscal-enrichment/boundary.json --enrich --offline
 ```
+
+<a name="data-feeds"></a>
+## Data feeds — real NIST 800-53, edge / air-gap deployable
+
+Findings and OSCAL output speak in NIST SP 800-53 control ids (`AC-2`, `SC-8`,
+`SC-13`, …). The **data-feed layer** turns those opaque ids into their *official*
+control titles by loading the authoritative catalog NIST itself publishes as
+native OSCAL JSON.
+
+| Feed id | Source | What it enriches |
+|---|---|---|
+| `oscal-800-53-rev5-catalog` | NIST SP 800-53 rev5 catalog (OSCAL) — <https://github.com/usnistgov/oscal-content> (`.../SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json`) | Resolves every control id in findings + SSP to its real title/family |
+
+The fetcher is **standard-library only** (no pip deps), caches each feed to disk,
+and re-serves it **offline** — so the tool keeps working on disconnected,
+edge, or air-gapped gear.
+
+```bash
+# list the feeds this tool consumes (+ cache freshness)
+fedramplens feeds list
+
+# (connected, once) fetch + cache the real NIST catalog
+fedramplens feeds update oscal-800-53-rev5-catalog
+
+# print the cached feed without touching the network
+fedramplens feeds get oscal-800-53-rev5-catalog --offline
+
+# analyze with control titles resolved straight from the cache
+fedramplens analyze boundary.json --enrich --offline
+fedramplens ssp     boundary.json --enrich --offline   # titles as OSCAL props
+```
+
+If the catalog is unavailable, enrichment **degrades gracefully** — ids are kept
+as-is and analysis never fails.
+
+### Air-gap (sneakernet) workflow
+
+Cache on a connected box, carry the snapshot into the enclave, import, run offline:
+
+```bash
+# connected jump box
+fedramplens feeds update oscal-800-53-rev5-catalog
+python -m fedramplens.datafeeds snapshot-export oscal-feeds.tar.gz
+
+# inside the air-gapped enclave
+python -m fedramplens.datafeeds snapshot-import oscal-feeds.tar.gz
+fedramplens analyze boundary.json --enrich --offline
+```
+
+The cache location is configurable via `COGNIS_FEEDS_CACHE` (default
+`~/.cache/cognis-feeds`). Tests ship a trimmed catalog fixture and run with zero
+network access.
 
 ## Contents
 
@@ -99,6 +153,8 @@ FedRAMP boundary visualizer & OSCAL-format SSP/POAM generator — without standi
 - ✅ Generate Ssp
 - ✅ Generate Poam
 - ✅ SARIF 2.1.0 export (`analyze --format sarif`) for GitHub code-scanning
+- ✅ Real NIST 800-53 rev5 control-title enrichment via the OSCAL data feed (`--enrich`)
+- ✅ Edge / air-gap data feeds: keyless fetch → disk cache → `--offline` re-serve → snapshot export/import
 - ✅ Runs on Linux/macOS/Windows · Docker · devcontainer
 - ✅ Ports in Python, JavaScript, Go, and Rust (`ports/`)
 

@@ -1,5 +1,19 @@
 # Sources
 
+## Catalog data feeds (edge / air-gap deployable)
+
+Authoritative, keyless feeds consumed by `fedramplens feeds` and the `--enrich`
+flag. Fetched over HTTPS, cached to disk (`COGNIS_FEEDS_CACHE`), and re-served
+`--offline`. Catalog: [`fedramplens/data_feeds_2026.json`](fedramplens/data_feeds_2026.json);
+fetcher: [`fedramplens/datafeeds.py`](fedramplens/datafeeds.py).
+
+| Feed id | Source URL | Use |
+|---|---|---|
+| `oscal-800-53-rev5-catalog` | https://raw.githubusercontent.com/usnistgov/oscal-content/main/nist.gov/SP800-53/rev5/json/NIST_SP-800-53_rev5_catalog.json | Resolve NIST SP 800-53 rev5 control ids → official titles in findings/SSP |
+
+The NIST SP 800-53 rev5 catalog (and the FedRAMP/RMF baseline profiles) are
+published by NIST as native OSCAL JSON at <https://github.com/usnistgov/oscal-content>.
+
 <!-- cognis-2026-live-sources -->
 
 ## Live 2026 sources (auto-expanded)

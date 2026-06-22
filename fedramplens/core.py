@@ -151,8 +151,21 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
     )
 
 
-def analyze_boundary(b: Boundary) -> Dict[str, Any]:
-    """Run boundary-integrity and control-coverage analysis."""
+def analyze_boundary(
+    b: Boundary,
+    *,
+    resolve_titles: bool = False,
+    offline: bool = False,
+) -> Dict[str, Any]:
+    """Run boundary-integrity and control-coverage analysis.
+
+    When ``resolve_titles`` is set, every control id surfaced in the analysis
+    (finding controls + each implemented control) is enriched with its official
+    NIST SP 800-53 rev5 title, loaded from the bundled OSCAL catalog data feed.
+    ``offline`` forces the feed to be served from the on-disk cache only.
+    Enrichment degrades gracefully: if the catalog is unavailable, ids are kept
+    as-is and ``feed_available`` is reported False.
+    """
     findings: List[Dict[str, Any]] = []
     comp_ids = b.component_ids()
 
@@ -232,6 +245,29 @@ def analyze_boundary(b: Boundary) -> Dict[str, Any]:
     external = [c["id"] for c in b.components if c.get("zone") == "external"]
     in_boundary = [c["id"] for c in b.components if c.get("zone") != "external"]
 
+    # Optional enrichment: resolve NIST 800-53 rev5 control titles from the
+    # authoritative OSCAL catalog feed and attach them to findings + summary.
+    control_titles: Dict[str, str] = {}
+    feed_available = False
+    if resolve_titles:
+        from .controls import control_title as _ct  # local import: feeds layer
+        ids = set(implemented)
+        for f in findings:
+            if f.get("control"):
+                ids.add(_normalize_control(f["control"]))
+        for cid in sorted(ids):
+            title = _ct(cid, offline=offline)
+            if title:
+                # key by lower-case OSCAL id (AC-2 -> ac-2, AC-2(1) -> ac-2.1)
+                key = cid.lower().replace("(", ".").replace(")", "")
+                control_titles[key] = title
+        feed_available = bool(control_titles)
+        for f in findings:
+            if f.get("control"):
+                title = _ct(f["control"], offline=offline)
+                if title:
+                    f["control_title"] = title
+
     summary = {
         "system_name": b.system_name,
         "system_id": b.system_id,
@@ -251,6 +287,9 @@ def analyze_boundary(b: Boundary) -> Dict[str, Any]:
             f["severity"] in ("high", "critical") for f in findings
         ),
     }
+    if resolve_titles:
+        summary["control_titles"] = control_titles
+        summary["feed_available"] = feed_available
     return summary
 
 
@@ -396,9 +435,19 @@ def generate_dot(b: Boundary) -> str:
     return "\n".join(lines)
 
 
-def generate_ssp(b: Boundary) -> Dict[str, Any]:
-    """Build an OSCAL-style System Security Plan skeleton."""
+def generate_ssp(
+    b: Boundary, *, resolve_titles: bool = False, offline: bool = False
+) -> Dict[str, Any]:
+    """Build an OSCAL-style System Security Plan skeleton.
+
+    With ``resolve_titles``, each implemented-requirement gains a ``props`` entry
+    carrying the official NIST 800-53 rev5 control title from the OSCAL feed.
+    """
     now = datetime.datetime.now(datetime.timezone.utc).isoformat()
+    title_for = None
+    if resolve_titles:
+        from .controls import control_title as _ct
+        title_for = lambda cid: _ct(cid, offline=offline)  # noqa: E731
     components = []
     impls = []
     for c in b.components:
@@ -410,7 +459,7 @@ def generate_ssp(b: Boundary) -> Dict[str, Any]:
             "props": [{"name": "zone", "value": c.get("zone", "internal")}],
         })
         for ctl in c.get("controls", []):
-            impls.append({
+            req: Dict[str, Any] = {
                 "control-id": _normalize_control(ctl).lower(),
                 "uuid": _uuid_like(c["id"] + ctl),
                 "by-components": [{
@@ -418,7 +467,13 @@ def generate_ssp(b: Boundary) -> Dict[str, Any]:
                     "uuid": _uuid_like(c["id"] + ctl + "impl"),
                     "description": f"Implemented by {c.get('name', c['id'])}.",
                 }],
-            })
+            }
+            if title_for:
+                t = title_for(ctl)
+                if t:
+                    req["props"] = [{"name": "label", "value": t,
+                                     "class": "nist-800-53-rev5-title"}]
+            impls.append(req)
     return {
         "system-security-plan": {
             "uuid": _uuid_like(b.system_id),
