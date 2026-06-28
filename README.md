@@ -20,6 +20,68 @@ pip install cognis-fedramplens
 fedramplens scan .            # → prioritized findings in seconds
 ```
 
+
+<!-- cognis:example:start -->
+## 🔎 Example output
+
+Real, reproducible output from the tool — runs offline:
+
+```console
+$ fedramplens-emit --version
+fedramplens 0.4.9
+```
+
+```console
+$ fedramplens-emit --help
+usage: fedramplens [-h] [--version] [--format {table,json,sarif}]
+                   {analyze,diagram,ssp,poam,feeds} ...
+
+FedRAMP boundary visualizer & OSCAL SSP/POA&M generator.
+
+positional arguments:
+  {analyze,diagram,ssp,poam,feeds}
+    analyze             analyze boundary integrity & coverage
+    diagram             emit Graphviz DOT for the boundary
+    ssp                 generate OSCAL-style SSP (JSON)
+    poam                generate OSCAL-style POA&M (JSON)
+    feeds               manage the NIST 800-53 OSCAL data feed
+                        (list|update|get)
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --format {table,json,sarif}
+                        output format for analyze: table | json | sarif 2.1.0
+                        (default: table; ignored for dot/ssp/poam)
+```
+
+> Blocks above are real `fedramplens` output — reproduce them from a clone.
+
+**Sample result format** _(illustrative values — run on your own data for real findings):_
+
+```
+{
+"feed_id": "1234567890",
+"platform": "stix",
+"findings": [
+    {
+        "id": "F-20230201-001",
+        "title": "Suspicious Network Traffic",
+        "description": "Unusual network traffic detected from 192.168.1.100 to 8.8.8.8",
+        "created": "2023-02-01T14:30:00Z"
+    },
+    {
+        "id": "F-20230201-002",
+        "title": "Malware Detection",
+        "description": "Malware detected on endpoint 192.168.1.100",
+        "created": "2023-02-01T14:31:00Z"
+    }
+]
+}
+```
+
+<!-- cognis:example:end -->
+
 ## Usage — step by step
 
 1. **Install** the tool:

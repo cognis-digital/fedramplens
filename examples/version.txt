@@ -1,0 +1,3 @@
+$ fedramplens-emit --version
+
+fedramplens 0.4.9

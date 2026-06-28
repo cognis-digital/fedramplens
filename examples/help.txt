@@ -1,0 +1,22 @@
+$ fedramplens-emit --help
+
+usage: fedramplens [-h] [--version] [--format {table,json,sarif}]
+                   {analyze,diagram,ssp,poam,feeds} ...
+
+FedRAMP boundary visualizer & OSCAL SSP/POA&M generator.
+
+positional arguments:
+  {analyze,diagram,ssp,poam,feeds}
+    analyze             analyze boundary integrity & coverage
+    diagram             emit Graphviz DOT for the boundary
+    ssp                 generate OSCAL-style SSP (JSON)
+    poam                generate OSCAL-style POA&M (JSON)
+    feeds               manage the NIST 800-53 OSCAL data feed
+                        (list|update|get)
+
+options:
+  -h, --help            show this help message and exit
+  --version             show program's version number and exit
+  --format {table,json,sarif}
+                        output format for analyze: table | json | sarif 2.1.0
+                        (default: table; ignored for dot/ssp/poam)
