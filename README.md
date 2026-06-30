@@ -141,6 +141,45 @@ python -m fedramplens --format sarif analyze demos/03-boundary-creep/boundary.js
 python -m fedramplens analyze demos/10-oscal-enrichment/boundary.json --enrich --offline
 ```
 
+### Runnable scenarios — narrated, by audience
+
+Five self-contained Python walkthroughs in [`demos/`](demos/) drive the **real**
+API over the bundled boundary fixtures, fully offline. Each targets a different
+audience, prints narrated output, and exits 0 (so they double as smoke tests).
+Full write-up in [`docs/DEMOS.md`](docs/DEMOS.md); architecture in
+[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+```bash
+PYTHONUTF8=1 python demos/run_all.py            # all five, end to end
+PYTHONUTF8=1 python demos/02_assessor_sarif_review.py   # or just one
+```
+
+| # | Scenario | Audience | Shows |
+|---|---|---|---|
+| 1 | [`01_pm_authorization_readiness.py`](demos/01_pm_authorization_readiness.py) | FedRAMP / Agency **PMs** | Portfolio ATO-readiness gate + escalation list |
+| 2 | [`02_assessor_sarif_review.py`](demos/02_assessor_sarif_review.py) | **3PAOs / assessors** | Findings as a SARIF 2.1.0 log for code-scanning |
+| 3 | [`03_platform_engineer_boundary_map.py`](demos/03_platform_engineer_boundary_map.py) | **Cloud platform engineers** | Mermaid + DOT boundary map; unencrypted crossings (SC-8) |
+| 4 | [`04_isso_oscal_packages.py`](demos/04_isso_oscal_packages.py) | **ISSOs** | Generate + inspect the OSCAL SSP and POA&M |
+| 5 | [`05_offline_control_enrichment.py`](demos/05_offline_control_enrichment.py) | **ISSOs / air-gap** | Resolve real NIST 800-53 rev5 titles offline; graceful degrade |
+
+One input — a boundary definition — fans out into findings, a visual map,
+SARIF, and OSCAL SSP/POA&M:
+
+```mermaid
+flowchart LR
+    BJSON["boundary.json"] --> LOAD["load_boundary()"]
+    LOAD --> ANALYZE["analyze_boundary()"]
+    LOAD --> DOT["generate_dot()"]
+    LOAD --> SSP["generate_ssp()"]
+    LOAD --> POAM["generate_poam()"]
+    ANALYZE --> SARIF["to_sarif()<br/>SARIF 2.1.0"]
+    CACHE[("OSCAL 800-53 rev5<br/>cache (offline)")] -. "resolve_titles" .-> ANALYZE
+    CACHE -. "resolve_titles" .-> SSP
+    DOT --> MAP["boundary map"]
+    SSP --> OSCAL["OSCAL package"]
+    POAM --> OSCAL
+```
+
 <a name="data-feeds"></a>
 ## Data feeds — real NIST 800-53, edge / air-gap deployable
 
