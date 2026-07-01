@@ -8,3 +8,4 @@ build/
 !demos/**
 
 media/walkthrough.mp4
+demos/__pycache__/

@@ -18,6 +18,21 @@ SCENARIOS = [
     "03_platform_engineer_boundary_map",
     "04_isso_oscal_packages",
     "05_offline_control_enrichment",
+    "06_ao_risk_dashboard",
+    "07_ci_gate_sarif_upload",
+    "08_control_coverage_report",
+    "09_poam_tracker",
+    "10_dependency_inventory",
+    "11_boundary_hygiene_lint",
+    "12_high_baseline_walkthrough",
+    "13_json_pipeline_integration",
+    "14_airgap_snapshot_transfer",
+    "15_enrichment_graceful_degrade",
+    "16_sarif_rule_catalogue",
+    "17_diagram_export_formats",
+    "18_oscal_ssp_deep_inspect",
+    "19_error_handling_showcase",
+    "20_full_package_pipeline",
 ]
 
 
