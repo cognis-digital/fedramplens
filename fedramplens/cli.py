@@ -191,33 +191,41 @@ def main(argv: Optional[List[str]] = None) -> int:
         print(f"error: invalid boundary: {exc}", file=sys.stderr)
         return 2
 
-    if args.command == "analyze":
-        summary = analyze_boundary(
-            b, resolve_titles=args.enrich, offline=args.offline
-        )
-        if args.format == "json":
-            print(json.dumps(summary, indent=2))
-        elif args.format == "sarif":
-            print(json.dumps(to_sarif(summary), indent=2))
-        else:
-            _print_analysis_table(summary)
-        # Non-zero exit if not authorization-ready.
-        return 0 if summary["authorization_ready"] else 1
+    try:
+        if args.command == "analyze":
+            summary = analyze_boundary(
+                b, resolve_titles=args.enrich, offline=args.offline
+            )
+            if args.format == "json":
+                print(json.dumps(summary, indent=2))
+            elif args.format == "sarif":
+                print(json.dumps(to_sarif(summary), indent=2))
+            else:
+                _print_analysis_table(summary)
+            # Non-zero exit if not authorization-ready.
+            return 0 if summary["authorization_ready"] else 1
 
-    if args.command == "diagram":
-        print(generate_dot(b))
-        return 0
+        if args.command == "diagram":
+            print(generate_dot(b))
+            return 0
 
-    if args.command == "ssp":
-        print(json.dumps(
-            generate_ssp(b, resolve_titles=args.enrich, offline=args.offline),
-            indent=2,
-        ))
-        return 0
+        if args.command == "ssp":
+            print(json.dumps(
+                generate_ssp(
+                    b, resolve_titles=args.enrich, offline=args.offline
+                ),
+                indent=2,
+            ))
+            return 0
 
-    if args.command == "poam":
-        print(json.dumps(generate_poam(b), indent=2))
-        return 0
+        if args.command == "poam":
+            print(json.dumps(generate_poam(b), indent=2))
+            return 0
+    except BoundaryError as exc:
+        # A Boundary can still fail validation late (e.g. an out-of-range
+        # impact only checked at analysis time). Surface it as a clean error.
+        print(f"error: invalid boundary: {exc}", file=sys.stderr)
+        return 2
 
     parser.error(f"unknown command: {args.command}")
     return 2

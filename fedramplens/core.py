@@ -112,6 +112,8 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
         raise BoundaryError("at least one component is required")
     seen = set()
     for c in components:
+        if not isinstance(c, dict):
+            raise BoundaryError("each component must be a JSON object")
         cid = c.get("id")
         if not cid:
             raise BoundaryError("component missing 'id'")
@@ -123,11 +125,18 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
             raise BoundaryError(
                 f"component {cid}: zone must be one of {VALID_ZONES}"
             )
+        ctls = c.get("controls", [])
+        if not isinstance(ctls, list):
+            raise BoundaryError(
+                f"component {cid}: 'controls' must be a list"
+            )
 
     flows = raw.get("flows", [])
     if not isinstance(flows, list):
         raise BoundaryError("'flows' must be a list")
     for f in flows:
+        if not isinstance(f, dict):
+            raise BoundaryError("each flow must be a JSON object")
         if not f.get("from") or not f.get("to"):
             raise BoundaryError("each flow needs 'from' and 'to'")
 
@@ -135,6 +144,8 @@ def _build_boundary(raw: Dict[str, Any]) -> Boundary:
     if not isinstance(poam, list):
         raise BoundaryError("'poam' must be a list")
     for p in poam:
+        if not isinstance(p, dict):
+            raise BoundaryError("each POA&M item must be a JSON object")
         sev = str(p.get("severity", "moderate")).lower()
         if sev not in VALID_SEVERITIES:
             raise BoundaryError(
@@ -209,9 +220,18 @@ def analyze_boundary(
     # 4. Control coverage estimate vs FedRAMP baseline.
     implemented = set()
     for c in b.components:
-        for ctl in c.get("controls", []):
+        for ctl in c.get("controls", []) or []:
             implemented.add(_normalize_control(ctl))
-    baseline = BASELINE_CONTROL_COUNTS[b.impact]
+    # Normalize impact defensively: a Boundary may be constructed directly via
+    # the public dataclass (bypassing load_boundary/_build_boundary), so accept
+    # any case and reject an out-of-range impact with a clear BoundaryError
+    # rather than leaking a raw KeyError from the baseline table.
+    impact = str(b.impact).strip().lower()
+    if impact not in BASELINE_CONTROL_COUNTS:
+        raise BoundaryError(
+            f"impact must be one of {VALID_IMPACTS}, got {b.impact!r}"
+        )
+    baseline = BASELINE_CONTROL_COUNTS[impact]
     coverage_pct = round(100.0 * len(implemented) / baseline, 1)
 
     # 5. POA&M risk roll-up + overdue detection.
@@ -221,20 +241,27 @@ def analyze_boundary(
     overdue = []
     open_items = 0
     for p in b.poam:
+        # Validate the scheduled date on EVERY item (open or closed): a
+        # malformed date is a data-quality problem regardless of status.
+        sched = p.get("scheduled")
+        parsed_date = None
+        if sched:
+            try:
+                parsed_date = datetime.date.fromisoformat(str(sched))
+            except (ValueError, TypeError):
+                findings.append({
+                    "severity": "low",
+                    "type": "bad_poam_date",
+                    "detail": f"POA&M {p.get('id')}: invalid date {sched!r}",
+                })
         if str(p.get("status", "open")).lower() == "open":
             open_items += 1
-            risk_score += sev_weight[str(p.get("severity", "moderate")).lower()]
-            sched = p.get("scheduled")
-            if sched:
-                try:
-                    if datetime.date.fromisoformat(sched) < today:
-                        overdue.append(p.get("id"))
-                except ValueError:
-                    findings.append({
-                        "severity": "low",
-                        "type": "bad_poam_date",
-                        "detail": f"POA&M {p.get('id')}: invalid date {sched!r}",
-                    })
+            sev = str(p.get("severity", "moderate")).lower()
+            # Tolerate an unknown severity (e.g. from a directly-built
+            # Boundary): weight it as moderate rather than raising KeyError.
+            risk_score += sev_weight.get(sev, sev_weight["moderate"])
+            if parsed_date is not None and parsed_date < today:
+                overdue.append(p.get("id"))
     for oid in overdue:
         findings.append({
             "severity": "high",
@@ -271,7 +298,7 @@ def analyze_boundary(
     summary = {
         "system_name": b.system_name,
         "system_id": b.system_id,
-        "impact": b.impact,
+        "impact": impact,
         "baseline_controls": baseline,
         "controls_implemented": len(implemented),
         "coverage_pct": coverage_pct,
@@ -320,11 +347,15 @@ def to_sarif(summary: Dict[str, Any]) -> Dict[str, Any]:
         "bad_poam_date":
             "Use ISO-8601 (YYYY-MM-DD) for POA&M scheduled-completion dates.",
     }
+    # Rank severities so a rule's default level reflects the most severe
+    # finding of its type, not merely the first one encountered.
+    level_rank = {"note": 0, "warning": 1, "error": 2}
     rules: List[Dict[str, Any]] = []
     rule_index: Dict[str, int] = {}
     results: List[Dict[str, Any]] = []
     for f in summary.get("findings", []):
-        ftype = f["type"]
+        ftype = f.get("type", "finding")
+        level = level_map.get(f.get("severity"), "warning")
         if ftype not in rule_index:
             rule_index[ftype] = len(rules)
             rules.append({
@@ -336,18 +367,21 @@ def to_sarif(summary: Dict[str, Any]) -> Dict[str, Any]:
                 },
                 "helpUri":
                     "https://github.com/cognis-digital/fedramplens#findings",
-                "defaultConfiguration": {
-                    "level": level_map.get(f["severity"], "warning")
-                },
+                "defaultConfiguration": {"level": level},
             })
-        props = {"fedramp-severity": f["severity"], "finding-type": ftype}
+        else:
+            # Escalate the rule default if this occurrence is more severe.
+            cfg = rules[rule_index[ftype]]["defaultConfiguration"]
+            if level_rank[level] > level_rank[cfg["level"]]:
+                cfg["level"] = level
+        props = {"fedramp-severity": f.get("severity"), "finding-type": ftype}
         if f.get("control"):
             props["nist-control"] = f["control"]
         results.append({
             "ruleId": ftype,
             "ruleIndex": rule_index[ftype],
-            "level": level_map.get(f["severity"], "warning"),
-            "message": {"text": f["detail"]},
+            "level": level,
+            "message": {"text": f.get("detail", "")},
             "properties": props,
             "locations": [{
                 "logicalLocations": [{
